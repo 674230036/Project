@@ -1,0 +1,716 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolarAI — Enterprise Solar Intelligence Platform</title>
+    <meta name="description" content="ระบบ AI วิเคราะห์พลังงานแสงอาทิตย์ Digital Twin 3D คำนวณ ROI และ ESG Dashboard">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="dwad.css">
+</head>
+
+<body>
+
+    <!-- PARTICLE CANVAS -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ============================================================ LOGIN ============================================================ -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <div class="login-glow"></div>
+            <div class="login-logo">
+                <i class="fa-solid fa-solar-panel sun-icon"></i>
+                <h1>SolarAI Enterprise</h1>
+                <p>AI-Powered Solar Intelligence Platform · Thesis Edition</p>
+            </div>
+            <div class="login-tabs">
+                <button onclick="setLoginRole('user')" id="btnTabUser" class="login-tab active">👤 ผู้ใช้งาน</button>
+                <button onclick="setLoginRole('admin')" id="btnTabAdmin" class="login-tab">🛡️ แอดมิน</button>
+            </div>
+            <div class="inp-group">
+                <label><i class="fa-solid fa-user"></i> ชื่อผู้ใช้งาน</label>
+                <input type="text" id="usernameInput" value="user">
+            </div>
+            <div class="inp-group">
+                <label><i class="fa-solid fa-lock"></i> รหัสผ่าน</label>
+                <input type="password" id="passwordInput" value="user123">
+            </div>
+            <button onclick="login()" class="btn-login">
+                <i class="fa-solid fa-bolt"></i> เข้าสู่ระบบ
+            </button>
+            <p class="login-hint" id="loginHint">บัญชีผู้ใช้: user / user123 &nbsp;|&nbsp; Admin: admin / admin123</p>
+        </div>
+    </div>
+
+    <!-- ============================================================ SIDEBAR ============================================================ -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="logo-icon"><i class="fa-solid fa-sun"
+                        style="color:var(--accent);position:relative;z-index:1;"></i></div>
+                <div class="logo-text">
+                    <h2>SolarAI</h2>
+                    <p>Enterprise v2.0 · Thesis</p>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-info">
+                    <div class="u-name" id="userNameDisplay">User</div>
+                    <div class="u-role" id="userRoleDisplay">Online</div>
+                </div>
+                <button onclick="logout()" class="btn-logout-side" title="ออกจากระบบ"><i
+                        class="fa-solid fa-power-off"></i></button>
+            </div>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section-label">แดชบอร์ดหลัก</div>
+            <button class="nav-btn active" onclick="switchPage('page-dashboard')" id="btn-page-dashboard">
+                <div class="nav-icon"><i class="fa-solid fa-chart-line"></i></div>
+                คำนวณ &amp; ROI Analysis
+            </button>
+            <button class="nav-btn" onclick="switchPage('page-satellite')" id="btn-page-satellite">
+                <div class="nav-icon"><i class="fa-solid fa-satellite"></i></div>
+                แผนที่ดาวเทียม &amp; วาดหลังคา
+            </button>
+            <button class="nav-btn" onclick="switchPage('page-twin')" id="btn-page-twin">
+                <div class="nav-icon"><i class="fa-solid fa-cube"></i></div>
+                3D Digital Twin
+            </button>
+
+            <div class="nav-section-label">AI &amp; Analytics</div>
+            <button class="nav-btn" onclick="switchPage('page-chatbot')" id="btn-page-chatbot">
+                <div class="nav-icon"><i class="fa-solid fa-robot"></i></div>
+                AI Solar Advisor
+                <span class="nav-badge">AI</span>
+            </button>
+            <button class="nav-btn" onclick="switchPage('page-forecast')" id="btn-page-forecast">
+                <div class="nav-icon"><i class="fa-solid fa-cloud-sun-rain"></i></div>
+                AI พยากรณ์รายสัปดาห์
+            </button>
+
+            <div class="nav-section-label" id="admin-section-label" style="display:none;">ฐานข้อมูล</div>
+            <button class="nav-btn" id="btn-page-database" onclick="switchPage('page-database')" style="display:none;">
+                <div class="nav-icon"><i class="fa-solid fa-database"></i></div>
+                MySQL Console
+                <span class="nav-badge">Admin</span>
+            </button>
+        </div>
+
+        <div class="sidebar-bottom">
+            <button class="theme-btn" onclick="toggleTheme()" id="themeToggleBtn">
+                <i class="fa-solid fa-moon"></i>
+                <span id="themeLabel">Light Mode</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ============================================================ MAIN WRAP ============================================================ -->
+    <div class="main-wrap">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="topbar-title">
+                <h2 id="topbarTitle">แดชบอร์ดคำนวณ &amp; ROI Analysis</h2>
+                <p id="topbarSub">เลือกพิกัดบนแผนที่เพื่อเริ่มการวิเคราะห์</p>
+            </div>
+            <div class="topbar-actions">
+                <div class="topbar-badge">NASA API Connected</div>
+                <button class="btn-icon" onclick="downloadReport()" title="ดาวน์โหลด PDF"><i
+                        class="fa-solid fa-file-pdf"></i></button>
+                <button class="btn-icon" onclick="toggleTheme()" title="สลับธีม"><i class="fa-solid fa-moon"
+                        id="themeIconTop"></i></button>
+            </div>
+        </div>
+
+        <div class="page-content">
+
+            <!-- ========================= PAGE: DASHBOARD ========================= -->
+            <div class="tab-page active" id="page-dashboard">
+                <div class="dash-grid">
+
+                    <!-- LEFT PANEL -->
+                    <div class="col">
+                        <!-- MAP CARD -->
+                        <div class="card fade-up fade-up-1">
+                            <div class="card-title">
+                                <div class="card-icon" style="background:rgba(0,212,255,0.1);color:var(--primary);"><i
+                                        class="fa-solid fa-location-dot"></i></div> ค้นหา &amp; ปักหมุดพิกัด
+                            </div>
+                            <div class="card-sub">คลิกบนแผนที่เพื่อเลือกพื้นที่ติดตั้งและดึงข้อมูล NASA</div>
+                            <div id="map"></div>
+                            <div class="map-btns">
+                                <button onclick="setMapLayer('street')" class="btn-sm"><i class="fa-solid fa-road"></i>
+                                    ถนน</button>
+                                <button onclick="setMapLayer('satellite')" class="btn-sm"><i
+                                        class="fa-solid fa-satellite"></i> ดาวเทียม</button>
+                                <button onclick="toggleHeatmap()" class="btn-sm"><i class="fa-solid fa-fire"
+                                        style="color:var(--accent2);"></i> Heatmap</button>
+                            </div>
+                        </div>
+
+                        <!-- PARAMETERS CARD -->
+                        <div class="card fade-up fade-up-2">
+                            <div class="card-title">
+                                <div class="card-icon" style="background:rgba(245,158,11,0.1);color:var(--accent);"><i
+                                        class="fa-solid fa-sliders"></i></div> พารามิเตอร์การติดตั้ง
+                            </div>
+                            <div class="card-sub">ปรับค่าและกดคำนวณผลลัพธ์ใหม่</div>
+
+                            <div class="slider-wrap">
+                                <div class="slider-header">
+                                    <span>ขนาดกำลังผลิตระบบ</span>
+                                    <span id="sliderSizeVal">5.0 kW</span>
+                                </div>
+                                <input type="range" id="kw" min="1" max="20" step="0.5" value="5"
+                                    oninput="updateSlider()">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-wallet"></i> มูลค่าเงินลงทุน (บาท)</label>
+                                <input type="number" id="price" value="150000" min="0" step="1000">
+                            </div>
+                            <div class="form-group">
+                                <label><i class="fa-solid fa-bolt"></i> อัตราค่าไฟต่อหน่วย (บาท)</label>
+                                <input type="number" id="unitPrice" value="4.4" min="0" step="0.1">
+                            </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="netMetering" onchange="toggleNM()">
+                                <label for="netMetering"><i class="fa-solid fa-hand-holding-dollar"
+                                        style="color:var(--green);"></i> ขายไฟคืนภาครัฐ (2.2 บ./หน่วย)</label>
+                            </div>
+                            <div id="selfConsGroup" style="display:none;" class="slider-wrap">
+                                <div class="slider-header">
+                                    <span>สัดส่วนใช้ไฟเองในบ้าน</span>
+                                    <span id="sliderSelfVal">70%</span>
+                                </div>
+                                <input type="range" id="selfConsumption" min="10" max="100" step="5" value="70"
+                                    oninput="updateSelfVal()">
+                            </div>
+                            <button onclick="calculate()" class="btn-calc">
+                                <i class="fa-solid fa-microchip"></i> วิเคราะห์ด้วย AI &amp; NASA API
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT PANEL -->
+                    <div class="col">
+
+                        <!-- WELCOME STATE -->
+                        <div id="welcomeState" class="state-box fade-up fade-up-1">
+                            <div class="state-icon"><i class="fa-solid fa-satellite-dish"></i></div>
+                            <h3>เลือกพิกัดเพื่อเริ่มการวิเคราะห์</h3>
+                            <p>คลิกบนแผนที่ด้านซ้ายเพื่อเลือกพื้นที่ติดตั้ง ระบบจะดึงข้อมูลรังสีอาทิตย์จาก NASA
+                                Climatology API และวิเคราะห์ ROI โดยอัตโนมัติ</p>
+                        </div>
+
+                        <!-- LOADING STATE -->
+                        <div id="loadingState" class="state-box" style="display:none;">
+                            <div class="spinner-ring"></div>
+                            <h3>กำลังวิเคราะห์ด้วย AI...</h3>
+                            <p>ดึงข้อมูลรังสีดวงอาทิตย์จาก NASA API และคำนวณผลลัพธ์</p>
+                        </div>
+
+                        <!-- RESULTS -->
+                        <div id="dashResults" style="display:none;" class="result-section">
+
+                            <!-- COORD ROW -->
+                            <div class="coord-row fade-up fade-up-1">
+                                <div class="coord-badge"><i class="fa-solid fa-globe"></i> Lat: <span
+                                        id="resLat">-</span></div>
+                                <div class="coord-badge"><i class="fa-solid fa-location-crosshairs"></i> Lng: <span
+                                        id="resLng">-</span></div>
+                                <button onclick="downloadReport()" class="btn-pdf"><i class="fa-solid fa-file-pdf"></i>
+                                    PDF Report</button>
+                            </div>
+
+                            <!-- KPI GRID -->
+                            <div class="kpi-grid">
+                                <div class="kpi-card fade-up fade-up-1" style="--kpi-color:var(--accent)">
+                                    <div class="kpi-label">☀️ Solar Radiation</div>
+                                    <div class="kpi-value" id="valRadiation">0.00</div>
+                                    <div class="kpi-unit">kWh / m² / วัน</div>
+                                    <i class="fa-solid fa-sun kpi-icon"></i>
+                                </div>
+                                <div class="kpi-card fade-up fade-up-2" style="--kpi-color:var(--green)">
+                                    <div class="kpi-label">⚡ ผลิตต่อวัน</div>
+                                    <div class="kpi-value" id="valDaily">0.00</div>
+                                    <div class="kpi-unit">kWh / วัน</div>
+                                    <i class="fa-solid fa-bolt kpi-icon"></i>
+                                </div>
+                                <div class="kpi-card fade-up fade-up-3" style="--kpi-color:var(--primary)">
+                                    <div class="kpi-label">📅 ผลิตต่อเดือน</div>
+                                    <div class="kpi-value" id="valMonthly">0.00</div>
+                                    <div class="kpi-unit">kWh / เดือน</div>
+                                    <i class="fa-solid fa-calendar kpi-icon"></i>
+                                </div>
+                                <div class="kpi-card fade-up fade-up-4" style="--kpi-color:var(--purple)">
+                                    <div class="kpi-label">🗓️ ผลิตต่อปี</div>
+                                    <div class="kpi-value" id="valYearly">0</div>
+                                    <div class="kpi-unit">kWh / ปี</div>
+                                    <i class="fa-solid fa-calendar-days kpi-icon"></i>
+                                </div>
+                                <div class="kpi-card fade-up fade-up-5" style="--kpi-color:var(--pink)">
+                                    <div class="kpi-label">💰 ประหยัดต่อปี</div>
+                                    <div class="kpi-value" id="valSaving">0</div>
+                                    <div class="kpi-unit">บาท / ปี</div>
+                                    <i class="fa-solid fa-piggy-bank kpi-icon"></i>
+                                </div>
+                                <div class="kpi-card fade-up fade-up-6" style="--kpi-color:var(--accent2)">
+                                    <div class="kpi-label">⏱️ คืนทุนใน</div>
+                                    <div class="kpi-value" id="valPayback">0.0</div>
+                                    <div class="kpi-unit">ปี</div>
+                                    <i class="fa-solid fa-chart-line kpi-icon"></i>
+                                </div>
+                            </div>
+
+                            <!-- AI CAPACITY OPTIMIZER -->
+                            <div class="card fade-up fade-up-2">
+                                <div class="card-title">
+                                    <div class="card-icon" style="background:rgba(59,130,246,0.1);color:#3b82f6;">
+                                        <i class="fa-solid fa-microchip"></i>
+                                    </div> AI Capacity &amp; Sizing Optimizer
+                                </div>
+                                <div class="card-sub">วิเคราะห์ขนาดการติดตั้งที่คุ้มค่าที่สุดและประเมินสเปกแผงโดย AI
+                                </div>
+                                <div class="alt-grid">
+                                    <div style="border-right:1px solid var(--border);padding-right:18px;">
+                                        <div style="font-size:0.8rem;font-weight:700;color:#3b82f6;margin-bottom:12px;">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i> ขนาดที่แนะนำจากโมเดล
+                                        </div>
+                                        <div class="roi-stat" style="margin-bottom:10px;text-align:left;padding:14px;">
+                                            <div class="roi-label">ขนาดติดตั้งแนะนำ (Optimal kW)</div>
+                                            <div class="roi-val" style="font-size:1.4rem;color:#3b82f6;" id="aiOptKw">-
+                                            </div>
+                                        </div>
+                                        <div class="roi-stat" style="text-align:left;padding:14px;">
+                                            <div class="roi-label">จำนวนแผงที่แนะนำ (800W)</div>
+                                            <div class="roi-val" style="font-size:1.15rem;color:var(--green);"
+                                                id="aiOptPanels">-</div>
+                                            <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">
+                                                พื้นที่หลังคาที่ต้องการ: <span id="aiOptArea">-</span> ตร.ม.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div
+                                            style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:12px;">
+                                            <i class="fa-solid fa-gears"></i> AI Optimizer Diagnostics
+                                        </div>
+                                        <div class="appliance-grid"
+                                            style="display:grid;grid-template-columns:1fr;gap:8px;">
+                                            <div class="appliance-item"
+                                                style="padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;">
+                                                <div>
+                                                    <div style="font-size:0.7rem;color:var(--muted);">Sizing Algorithm
+                                                    </div>
+                                                    <div style="font-size:0.8rem;font-weight:700;color:var(--accent);"
+                                                        id="aiModelName">Gradient Boosting Regressor</div>
+                                                </div>
+                                            </div>
+                                            <div class="appliance-item"
+                                                style="padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;">
+                                                <div>
+                                                    <div style="font-size:0.7rem;color:var(--muted);">Optimization
+                                                        Confidence R²</div>
+                                                    <div style="font-size:0.8rem;font-weight:700;color:var(--green);"
+                                                        id="aiModelConfidence">98.65%</div>
+                                                </div>
+                                            </div>
+                                            <div class="appliance-item"
+                                                style="padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;">
+                                                <div>
+                                                    <div style="font-size:0.7rem;color:var(--muted);">Criteria Source
+                                                    </div>
+                                                    <div style="font-size:0.75rem;font-weight:700;color:var(--text);"
+                                                        id="aiModelIrradiance">NASA Climatology y20 Historical</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- CUMULATIVE ROI -->
+                            <div class="card fade-up fade-up-4">
+                                <div class="card-title">
+                                    <div class="card-icon" style="background:rgba(0,255,148,0.1);color:var(--green);"><i
+                                            class="fa-solid fa-money-bill-trend-up"></i></div> ตารางยอดประหยัดสะสม (25
+                                    ปี)
+                                </div>
+                                <div class="card-sub">ประเมินยอดเงินประหยัดสะสมจากพลังงานแสงอาทิตย์ตลอดอายุการใช้งาน
+                                </div>
+                                <div class="roi-grid">
+                                    <div class="roi-stat">
+                                        <div class="roi-label">ปีที่ 1</div>
+                                        <div class="roi-val" id="roiYear1">-</div>
+                                    </div>
+                                    <div class="roi-stat">
+                                        <div class="roi-label">ปีที่ 5</div>
+                                        <div class="roi-val" id="roiYear5">-</div>
+                                    </div>
+                                    <div class="roi-stat">
+                                        <div class="roi-label">ปีที่ 10</div>
+                                        <div class="roi-val" id="roiYear10">-</div>
+                                    </div>
+                                    <div class="roi-stat" style="border-color:rgba(0,255,148,0.3);">
+                                        <div class="roi-label">ปีที่ 25</div>
+                                        <div class="roi-val" id="roiYear25" style="color:var(--green);">-</div>
+                                    </div>
+                                </div>
+                                <div class="glow-line"></div>
+                                <div
+                                    style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,255,148,0.04);border:1px solid rgba(0,255,148,0.15);border-radius:10px;">
+                                    <span style="font-size:0.85rem;font-weight:600;">กำไรสะสมสุทธิ (หักเงินลงทุน · ปีที่
+                                        25)</span>
+                                    <span style="font-size:1.1rem;font-weight:800;color:var(--green);"
+                                        id="netProfit25">- บาท</span>
+                                </div>
+                            </div>
+
+                            <!-- MONTHLY CHART -->
+                            <div class="card fade-up fade-up-5">
+                                <div class="card-title">
+                                    <div class="card-icon" style="background:rgba(0,212,255,0.1);color:var(--primary);">
+                                        <i class="fa-solid fa-chart-area"></i>
+                                    </div> ปริมาณผลิตพลังงานรายเดือน
+                                </div>
+                                <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+                            </div>
+
+                            <!-- RANKING CARD -->
+                            <div class="card fade-up fade-up-2" id="rankCard" style="display:none;margin-top:20px;">
+                                <div class="card-title">
+                                    <div class="card-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;"><i
+                                            class="fa-solid fa-trophy"></i></div> Solar Performance Ranking Thailand
+                                </div>
+                                <div class="card-sub">เปรียบเทียบประสิทธิภาพพิกัดของคุณกับพื้นที่อื่นในประเทศไทย</div>
+                                <div class="esg-item blue" style="margin-bottom:16px;">
+                                    <div class="esg-big-icon" style="font-size:2rem;color:#6366f1;">🏆</div>
+                                    <div>
+                                        <div class="esg-val" style="color:#6366f1;" id="rankText">-</div>
+                                        <div class="esg-desc" id="rankSub">-</div>
+                                    </div>
+                                </div>
+                                <table class="compare-table">
+                                    <thead>
+                                        <tr>
+                                            <th>พิกัดพื้นที่</th>
+                                            <th>ผลิตไฟฟ้า (kWh/ปี)</th>
+                                            <th>ระดับประสิทธิภาพ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>บ้านโป่ง (ราชบุรี)</td>
+                                            <td>7,520 kWh</td>
+                                            <td style="color:#ef4444;font-weight:700;">Top 8% ดีเยี่ยม</td>
+                                        </tr>
+                                        <tr>
+                                            <td>นครปฐม (อำเภอเมือง)</td>
+                                            <td>7,350 kWh</td>
+                                            <td style="color:var(--accent);font-weight:700;">Top 18% ดีมาก</td>
+                                        </tr>
+                                        <tr>
+                                            <td>สุพรรณบุรี (อำเภอเมือง)</td>
+                                            <td>7,690 kWh</td>
+                                            <td style="color:#ef4444;font-weight:700;">Top 4% สูงสุด</td>
+                                        </tr>
+                                        <tr class="highlight" id="rankCurrentRow" style="display:none;">
+                                            <td>📍 พิกัดของคุณ</td>
+                                            <td id="rankCurrentVal">-</td>
+                                            <td><span id="rankBadge" style="font-weight:700;">-</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= PAGE: SATELLITE ========================= -->
+            <div class="tab-page" id="page-satellite">
+                <div class="card fade-up fade-up-1">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(245,158,11,0.1);color:var(--accent);"><i
+                                class="fa-solid fa-satellite"></i></div> แผนที่ดาวเทียม &amp; วาดพื้นที่หลังคา (Roof
+                        Analyzer)
+                    </div>
+                    <div class="card-sub">วาดรูปทรงบนพื้นที่หลังคาเพื่อคำนวณขนาดการติดตั้งแผงโซลาร์แบบมืออาชีพ</div>
+                    <div class="draw-btns">
+                        <button onclick="startDrawing()" class="btn-calc" style="width:auto;flex:1;margin-top:0;"><i
+                                class="fa-solid fa-pencil"></i> เริ่มวาด</button>
+                        <button onclick="stopDrawing()" class="btn-sm" style="flex:1;justify-content:center;"><i
+                                class="fa-solid fa-draw-polygon"></i> คำนวณ &amp; สิ้นสุด</button>
+                        <button onclick="deleteLastPoint()" class="btn-sm"
+                            style="color:var(--accent);border-color:rgba(245,158,11,0.2);flex:1;justify-content:center;"><i
+                                class="fa-solid fa-rotate-left"></i> ลบจุดล่าสุด</button>
+                        <button onclick="clearDrawing()" class="btn-sm"
+                            style="color:var(--pink);border-color:rgba(236,72,153,0.2);flex:1;justify-content:center;"><i
+                                class="fa-solid fa-trash"></i> เคลียร์</button>
+                    </div>
+                    <div class="draw-status" id="drawStatus">สถานะ: <span>กดปุ่ม 'เริ่มวาด'
+                            แล้วคลิกจุดมุมบนแผนที่</span></div>
+                    <div id="satMap"></div>
+                    <div class="glow-line"></div>
+                    <div class="maintenance-grid" style="margin-top:4px;">
+                        <div class="roi-stat">
+                            <div class="roi-label">พื้นที่หลังคา</div>
+                            <div class="roi-val"><span id="drawArea">0.0</span> ตร.ม.</div>
+                        </div>
+                        <div class="roi-stat">
+                            <div class="roi-label">จำนวนแผงสูงสุด</div>
+                            <div class="roi-val"><span id="drawPanels">0</span> แผง</div>
+                        </div>
+                        <div class="roi-stat">
+                            <div class="roi-label">กำลังผลิตสูงสุด</div>
+                            <div class="roi-val"><span id="drawCapacity">0.00</span> kW</div>
+                        </div>
+                        <div class="roi-stat" style="border-color:rgba(0,255,148,0.3);cursor:pointer;"
+                            onclick="applyDrawCapacity()">
+                            <div class="roi-label" style="color:var(--green);font-weight:700;">✅ ใช้ขนาดนี้</div>
+                            <div class="roi-val" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i>
+                                Apply</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= PAGE: 3D TWIN ========================= -->
+            <div class="tab-page" id="page-twin">
+                <div class="card fade-up fade-up-1">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(0,212,255,0.1);color:var(--primary);"><i
+                                class="fa-solid fa-cube"></i></div> 3D Digital Twin House — Real-time Sun Simulation
+                    </div>
+                    <div class="card-sub">แบบจำลองทิศทางแสงแดด ร่มเงา และกำลังผลิตพลังงาน Real-time</div>
+                    <div id="threejs-container">
+                        <div class="three-hud">
+                            <div><span class="hud-label">MODEL</span> &nbsp; HOUSE_PV_SOLAR_V2</div>
+                            <div><span class="hud-label">SUN_ANGLE</span> &nbsp; <span id="rtSunAngle">0</span>°</div>
+                            <div><span class="hud-label">SHADOW</span> &nbsp; <span id="rtShadowVal">5</span>%</div>
+                            <div><span class="hud-label">OUTPUT</span> &nbsp; <span id="rtPowerOutput">0.00</span> kW
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slider-wrap" style="margin-top:18px;">
+                        <div class="slider-header">
+                            <span>⏰ เวลาในรอบวัน (06:00 — 18:00)</span>
+                            <span id="sliderTimeVal">12:00 น.</span>
+                        </div>
+                        <input type="range" id="timeSlider" min="6" max="18" step="0.1" value="12"
+                            oninput="updateSunSim()">
+                    </div>
+                    <div class="roi-grid">
+                        <div class="roi-stat">
+                            <div class="roi-label">ตำแหน่งดวงอาทิตย์</div>
+                            <div class="roi-val" id="rtSunStatus">เที่ยง</div>
+                        </div>
+                        <div class="roi-stat">
+                            <div class="roi-label">ประสิทธิภาพมุมรับแสง</div>
+                            <div class="roi-val" id="rtPanelEff">100%</div>
+                        </div>
+                        <div class="roi-stat" style="border-color:rgba(0,212,255,0.3);">
+                            <div class="roi-label" style="color:var(--primary);">กำลังผลิต Real-time</div>
+                            <div class="roi-val" style="color:var(--primary);" id="rtPowerOutput2">4.50 kW</div>
+                        </div>
+                        <div class="roi-stat">
+                            <div class="roi-label">พื้นที่ร่มเงา</div>
+                            <div class="roi-val" id="rtShadowVal2">5%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= PAGE: AI CHATBOT ========================= -->
+            <div class="tab-page" id="page-chatbot">
+                <div class="card fade-up fade-up-1">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(0,212,255,0.15);color:var(--primary);"><i
+                                class="fa-solid fa-robot"></i></div> AI Solar Advisor — แชทบอทช่วยตัดสินใจ
+                    </div>
+                    <div class="card-sub">ปัญญาประดิษฐ์ให้คำแนะนำเกี่ยวกับการออกแบบระบบ ROI แบตเตอรี่ คาร์บอนเครดิต
+                    </div>
+                    <div class="chat-wrap">
+                        <div class="chat-history" id="chatHistory"></div>
+                        <div class="chat-suggested">
+                            <button onclick="sendMsg('ค่าไฟเดือนละ 4,500 บาท แนะนำขนาดแผงที่เหมาะสมครับ')"
+                                class="suggest-chip">💡 ค่าไฟ 4,500 บาท</button>
+                            <button onclick="sendMsg('การคำนวณแบตเตอรี่สำรองช่วงกลางคืน')" class="suggest-chip">🔋
+                                แบตเตอรี่สำรอง</button>
+                            <button onclick="sendMsg('ลดคาร์บอนเครดิต ESG ได้เท่าไหร่?')" class="suggest-chip">🌿 ESG
+                                Carbon</button>
+                            <button onclick="sendMsg('ระยะเวลาคืนทุนและกำไรสุทธิ 25 ปี')" class="suggest-chip">📈 ROI 25
+                                ปี</button>
+                            <button onclick="sendMsg('พยากรณ์การผลิตพลังงานพรุ่งนี้')" class="suggest-chip">🔮
+                                พยากรณ์วันพรุ่ง</button>
+                        </div>
+                        <div class="chat-input-row">
+                            <input type="text" id="chatInput" placeholder="พิมพ์คำถามของคุณ..."
+                                onkeydown="if(event.key==='Enter') sendMsg()">
+                            <button onclick="sendMsg()" class="btn-send"><i
+                                    class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BATTERY RECOMMENDER -->
+                <div class="card fade-up fade-up-2" style="margin-top:20px;">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(99,102,241,0.1);color:var(--purple);"><i
+                                class="fa-solid fa-battery-three-quarters"></i></div> AI ผู้ช่วยเลือกขนาดแบตเตอรี่
+                    </div>
+                    <div class="card-sub">คำนวณขนาดแบตเตอรี่ที่เหมาะสมสำหรับกักเก็บพลังงานช่วงกลางคืน</div>
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-moon"></i> ปริมาณการใช้ไฟช่วงกลางคืน (kWh)</label>
+                        <input type="number" id="nightLoad" value="8" oninput="recommendBat()">
+                    </div>
+                    <div class="bat-result">
+                        <div class="bat-row"><span>ขนาดแบตเตอรี่แนะนำ (DOD 80%)</span><span class="bat-val"
+                                id="batSize">10.0
+                                kWh</span></div>
+                        <div class="bat-row"><span>รุ่น/โมเดลแนะนำ</span><span class="bat-val" id="batModel">Tesla
+                                Powerwall หรือ LFP 48V 200Ah</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================= PAGE: FORECAST ========================= -->
+            <div class="tab-page" id="page-forecast">
+                <div class="card fade-up fade-up-1">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(245,158,11,0.1);color:var(--accent);"><i
+                                class="fa-solid fa-cloud-sun-rain"></i></div> AI พยากรณ์การผลิตไฟฟ้ารายสัปดาห์ (7
+                        วันล่วงหน้า)
+                    </div>
+                    <div class="card-sub">คาดการณ์ล่วงหน้าด้วยสถิติดาวเทียม + การผันผวนสภาพอากาศ AI</div>
+                    <div id="forecastList" class="forecast-list">
+                        <div class="state-box" style="padding:40px;">
+                            <div class="state-icon" style="font-size:2rem;"><i class="fa-solid fa-cloud-sun-rain"></i>
+                            </div>
+                            <p>กรุณาคำนวณข้อมูลจากแดชบอร์ดก่อน เพื่อดูการพยากรณ์รายสัปดาห์</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ========================= PAGE: DATABASE ========================= -->
+            <div class="tab-page" id="page-database">
+                <div class="card fade-up fade-up-1">
+                    <div class="card-title">
+                        <div class="card-icon" style="background:rgba(0,212,255,0.1);color:var(--primary);"><i
+                                class="fa-solid fa-database"></i></div> MySQL Database Live Console (Thesis Backend
+                        Mockup)
+                    </div>
+                    <div class="card-sub">ควบคุมและจัดการ SQL database ในระบบหลังบ้าน</div>
+                    <div class="sql-console">
+                        <div class="console-top">
+                            <span>MySQL 8.0.32 · DB: <b>thesis_solarai</b> · Tables: users | estimates_log |
+                                comparison_data</span>
+                            <span class="console-status">Connected</span>
+                        </div>
+                        <div class="sql-input-row">
+                            <input type="text" id="sqlQueryInput" value="SELECT * FROM estimates_log;">
+                            <button onclick="runSQL()" class="btn-run">▶ Run SQL</button>
+                        </div>
+                        <div class="sql-output" id="sqlResult"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- PDF TEMPLATE -->
+    <div id="pdfTemplate">
+        <h1>รายงานประเมินความคุ้มทุนและสิ่งแวดล้อม SolarAI</h1>
+        <p class="pdf-sub">SolarAI Enterprise Simulator · Thesis Final Edition</p>
+        <p style="font-size:0.82rem;color:#64748b;margin-bottom:10px;">วันที่: <span id="pdfDate">-</span></p>
+        <div class="pdf-sec">1. ตำแหน่งและพิกัด</div>
+        <table class="pdf-tbl">
+            <tr>
+                <td class="lbl">ละติจูด</td>
+                <td id="pdfLat">-</td>
+                <td class="lbl">ลองจิจูด</td>
+                <td id="pdfLng">-</td>
+            </tr>
+            <tr>
+                <td class="lbl">รังสีอาทิตย์เฉลี่ย</td>
+                <td id="pdfRadiation">-</td>
+                <td class="lbl">ขนาดระบบ</td>
+                <td id="pdfSize">-</td>
+            </tr>
+        </table>
+        <div class="pdf-sec">2. ผลการผลิตพลังงาน</div>
+        <table class="pdf-tbl">
+            <tr>
+                <td class="lbl">ผลิตไฟฟ้า/วัน</td>
+                <td id="pdfDaily">-</td>
+                <td class="lbl">ผลิตไฟฟ้า/ปี</td>
+                <td id="pdfYearly">-</td>
+            </tr>
+        </table>
+        <div class="pdf-sec">3. การเงินและ ROI</div>
+        <table class="pdf-tbl">
+            <tr>
+                <td class="lbl">เงินลงทุน</td>
+                <td id="pdfInvestment">-</td>
+                <td class="lbl">ประหยัด/ปี</td>
+                <td id="pdfSaving">-</td>
+            </tr>
+            <tr>
+                <td class="lbl">ระยะคืนทุน</td>
+                <td id="pdfPayback">-</td>
+                <td class="lbl">กำไรสุทธิ 25 ปี</td>
+                <td id="pdfNetProfit" style="font-weight:700;color:#10b981;">-</td>
+            </tr>
+        </table>
+        <div class="pdf-sec">4. ประมาณการสะสมรายปี</div>
+        <table class="pdf-tbl">
+            <tr>
+                <td class="lbl">ปีที่ 1</td>
+                <td id="pdfY1">-</td>
+                <td class="lbl">ปีที่ 5</td>
+                <td id="pdfY5">-</td>
+            </tr>
+            <tr>
+                <td class="lbl">ปีที่ 10</td>
+                <td id="pdfY10">-</td>
+                <td class="lbl">ปีที่ 25</td>
+                <td id="pdfY25" style="font-weight:700;color:#10b981;">-</td>
+            </tr>
+        </table>
+        <div class="pdf-footer">เอกสารนี้สร้างโดย SolarAI Enterprise System · ข้อมูลรังสีอ้างอิงจาก NASA Climatology API
+            (POWER)</div>
+    </div>
+
+    <!-- ======================== JAVASCRIPT ======================== -->
+    <script src="dwad.js"></script>
+</body>
+
+</html>
