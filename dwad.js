@@ -1,4 +1,4 @@
-﻿        // ============================= PARTICLES =============================
+        // ============================= PARTICLES =============================
         (function () {
             const canvas = document.getElementById('particleCanvas');
             const ctx = canvas.getContext('2d');
@@ -232,6 +232,21 @@
             'page-forecast': { title: 'AI พยากรณ์รายสัปดาห์', sub: 'คาดการณ์การผลิตไฟฟ้า 7 วันล่วงหน้า' },
             'page-database': { title: 'MySQL Database Console', sub: 'จัดการ SQL database หลังบ้าน' }
         };
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                if (sidebar.classList.contains('open')) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => overlay.style.opacity = '1', 10);
+                } else {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            }
+        }
+
         function switchPage(id) {
             document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -244,6 +259,17 @@
             if (id === 'page-twin') { init3D(); setTimeout(updateSunSim, 100); }
             if (id === 'page-dashboard') { setTimeout(() => mainMap.invalidateSize(), 200); }
             if (id === 'page-satellite') { setTimeout(() => satMap2.invalidateSize(), 200); }
+
+            // Auto-hide sidebar on page switch (mobile/tablet)
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                if (overlay) {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 300);
+                }
+            }
         }
 
         // ============================= SLIDERS =============================

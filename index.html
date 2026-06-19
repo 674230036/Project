@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -124,12 +125,16 @@
             </button>
         </div>
     </nav>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <!-- ============================================================ MAIN WRAP ============================================================ -->
     <div class="main-wrap">
 
         <!-- TOPBAR -->
         <div class="topbar">
+            <button class="btn-icon" id="sidebarToggle" onclick="toggleSidebar()" title="เปิดเมนู">
+                <i class="fa-solid fa-bars"></i>
+            </button>
             <div class="topbar-title">
                 <h2 id="topbarTitle">แดชบอร์ดคำนวณ &amp; ROI Analysis</h2>
                 <p id="topbarSub">เลือกพิกัดบนแผนที่เพื่อเริ่มการวิเคราะห์</p>
