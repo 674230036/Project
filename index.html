@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -653,9 +653,15 @@
 
                         <!-- Quick Query Action Buttons -->
                         <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-                            <button onclick="runQuickSQL('SELECT * FROM users')" class="btn-sm" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i class="fa-solid fa-users"></i> SELECT * FROM users;</button>
-                            <button onclick="runQuickSQL('SELECT * FROM estimates_log')" class="btn-sm" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i class="fa-solid fa-clock-history"></i> SELECT * FROM estimates_log;</button>
-                            <button onclick="runQuickSQL('SELECT * FROM comparison_data')" class="btn-sm" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i class="fa-solid fa-database"></i> SELECT * FROM comparison_data;</button>
+                            <button onclick="runQuickSQL('SELECT * FROM users')" class="btn-sm"
+                                style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i
+                                    class="fa-solid fa-users"></i> SELECT * FROM users;</button>
+                            <button onclick="runQuickSQL('SELECT * FROM estimates_log')" class="btn-sm"
+                                style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i
+                                    class="fa-solid fa-clock-history"></i> SELECT * FROM estimates_log;</button>
+                            <button onclick="runQuickSQL('SELECT * FROM comparison_data')" class="btn-sm"
+                                style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><i
+                                    class="fa-solid fa-database"></i> SELECT * FROM comparison_data;</button>
                         </div>
 
                         <div class="sql-input-row">
@@ -670,9 +676,11 @@
                 <div class="card fade-up fade-up-2" style="margin-top:20px;">
                     <div class="card-title">
                         <div class="card-icon" style="background:rgba(0,255,148,0.1);color:var(--green);"><i
-                                class="fa-solid fa-users-gear"></i></div> สมาชิกที่สมัครเข้าระบบ (Registered Users Database)
+                                class="fa-solid fa-users-gear"></i></div> สมาชิกที่สมัครเข้าระบบ (Registered Users
+                        Database)
                     </div>
-                    <div class="card-sub">บัญชีผู้สมัครใช้งานระบบที่บันทึกอยู่ใน Live Database (สามารถสืบค้นผ่าน SQL ด้านบนได้เช่นกัน)</div>
+                    <div class="card-sub">บัญชีผู้สมัครใช้งานระบบที่บันทึกอยู่ใน Live Database (สามารถสืบค้นผ่าน SQL
+                        ด้านบนได้เช่นกัน)</div>
                     <div id="liveUsersTableContainer" style="overflow-x:auto;"></div>
                 </div>
             </div>
