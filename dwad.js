@@ -53,16 +53,10 @@
             anim();
         })();
 
-        // ============================= DYNAMIC DB (LocalStorage) =============================
-        const defaultUsers = [
-            { id: 1, username: 'admin', password: 'admin123', role: 'admin', status: 'Active' },
-            { id: 2, username: 'user', password: 'user123', role: 'user', status: 'Active' }
-        ];
-        
-        const defaultEstimates = [
-            { id: 101, username: 'admin', timestamp: '2026-06-19 14:15', system_kw: 5.0, cost_thb: 150000, annual_saving: 29800, payback_years: 5.03, lat: 14.4740, lon: 100.1170 },
-            { id: 102, username: 'user', timestamp: '2026-06-19 11:30', system_kw: 10.0, cost_thb: 280000, annual_saving: 61200, payback_years: 4.58, lat: 13.7563, lon: 100.5018 }
-        ];
+        // ============================= SUPABASE DATABASE =============================
+        const supabaseUrl = 'https://qceuvwllwkgkcpicbhcp.supabase.co';
+        const supabaseKey = 'sb_publishable_QYYVBkAgK-zxnKLClJQ1cw_vkX1rwiq';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         const defaultComparison = [
             { location: 'บ้านโป่ง', annual_kwh: 7520, desc: 'Top 8%' },
@@ -70,42 +64,9 @@
             { location: 'สุพรรณบุรี', annual_kwh: 7690, desc: 'Top 4%' }
         ];
 
-        // Initialize localStorage if not present
-        if (!localStorage.getItem('solarai_users')) {
-            localStorage.setItem('solarai_users', JSON.stringify(defaultUsers));
-        } else {
-            // Ensure admin account always exists in case database was modified or cleared of admin
-            const users = JSON.parse(localStorage.getItem('solarai_users'));
-            const adminExists = users.some(u => u.username.toLowerCase() === 'admin');
-            if (!adminExists) {
-                users.unshift({ id: 1, username: 'admin', password: 'admin123', role: 'admin', status: 'Active' });
-                localStorage.setItem('solarai_users', JSON.stringify(users));
-            }
-        }
-        if (!localStorage.getItem('solarai_estimates')) {
-            localStorage.setItem('solarai_estimates', JSON.stringify(defaultEstimates));
-        }
-        if (!localStorage.getItem('solarai_comparison')) {
-            localStorage.setItem('solarai_comparison', JSON.stringify(defaultComparison));
-        }
-
-        const db = {
-            getUsers: () => JSON.parse(localStorage.getItem('solarai_users')),
-            saveUsers: (users) => localStorage.setItem('solarai_users', JSON.stringify(users)),
-            getEstimates: () => JSON.parse(localStorage.getItem('solarai_estimates')),
-            saveEstimates: (estimates) => localStorage.setItem('solarai_estimates', JSON.stringify(estimates)),
-            getComparison: () => JSON.parse(localStorage.getItem('solarai_comparison'))
-        };
-
-        const mockDB = {
-            get users() { return db.getUsers(); },
-            get estimates_log() { return db.getEstimates(); },
-            get comparison_data() { return db.getComparison(); }
-        };
-
         let authMode = 'login';
         let currentRole = 'user';
-        let currentUser = db.getUsers()[1]; // Fallback to default user
+        let currentUser = { id: 2, username: 'user', role: 'user', status: 'Active' };
         let lat = 14.474, lon = 100.117;
         let panelCleanliness = 0.915;
 
@@ -148,7 +109,7 @@
             }
         }
 
-        function register() {
+        async function register() {
             const u = document.getElementById('usernameInput').value.trim();
             const p = document.getElementById('passwordInput').value;
             const cp = document.getElementById('confirmPasswordInput').value;
@@ -170,33 +131,37 @@
                 return;
             }
 
-            const users = db.getUsers();
-            const exists = users.some(user => user.username.toLowerCase() === u.toLowerCase());
-            if (exists) {
-                alert('ชื่อผู้ใช้งานนี้ถูกใช้งานแล้ว กรุณาใช้ชื่ออื่น');
-                return;
+            try {
+                const { data: existingUser, error: checkError } = await _supabase
+                    .from('users')
+                    .select('username')
+                    .eq('username', u)
+                    .maybeSingle();
+
+                if (checkError) throw checkError;
+                if (existingUser) {
+                    alert('ชื่อผู้ใช้งานนี้ถูกใช้งานแล้ว กรุณาใช้ชื่ออื่น');
+                    return;
+                }
+
+                const { error: insertError } = await _supabase
+                    .from('users')
+                    .insert([{ username: u, password: p, role: 'user', status: 'Active' }]);
+
+                if (insertError) throw insertError;
+
+                alert('สมัครสมาชิกสำเร็จแล้ว! ระบบจะสลับไปที่หน้าเข้าสู่ระบบ');
+                
+                setAuthMode('login');
+                document.getElementById('usernameInput').value = u;
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            } catch (err) {
+                alert('สมัครสมาชิกล้มเหลว: ' + err.message);
             }
-
-            const newUser = {
-                id: Date.now(),
-                username: u,
-                password: p,
-                role: 'user', // Registered user is always 'user'
-                status: 'Active'
-            };
-
-            users.push(newUser);
-            db.saveUsers(users);
-
-            alert('สมัครสมาชิกสำเร็จแล้ว! ระบบจะสลับไปที่หน้าเข้าสู่ระบบ');
-            
-            setAuthMode('login');
-            document.getElementById('usernameInput').value = u;
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordInput').focus();
         }
 
-        function login() {
+        async function login() {
             const u = document.getElementById('usernameInput').value.trim();
             const p = document.getElementById('passwordInput').value;
             
@@ -205,40 +170,54 @@
                 return;
             }
 
-            const users = db.getUsers();
-            const foundUser = users.find(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
+            try {
+                const { data: foundUser, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', u)
+                    .eq('password', p)
+                    .maybeSingle();
 
-            if (foundUser) {
-                currentUser = foundUser;
-                currentRole = foundUser.role;
-                
-                document.getElementById('loginOverlay').style.display = 'none';
-                
-                const avatarChar = foundUser.username.substring(0, 1).toUpperCase();
-                document.getElementById('userAvatar').textContent = avatarChar;
-                document.getElementById('userNameDisplay').textContent = foundUser.username;
-                
-                if (foundUser.role === 'admin') {
-                    document.getElementById('userRoleDisplay').textContent = 'Administrator';
-                    document.getElementById('btn-page-database').style.display = 'flex';
-                    document.getElementById('admin-section-label').style.display = 'block';
-                    runSQL();
+                if (error) throw error;
+
+                if (foundUser) {
+                    currentUser = foundUser;
+                    currentRole = foundUser.role;
+                    
+                    // Save user session
+                    localStorage.setItem('solarai_current_user', JSON.stringify(foundUser));
+                    
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    
+                    const avatarChar = foundUser.username.substring(0, 1).toUpperCase();
+                    document.getElementById('userAvatar').textContent = avatarChar;
+                    document.getElementById('userNameDisplay').textContent = foundUser.username;
+                    
+                    if (foundUser.role === 'admin') {
+                        document.getElementById('userRoleDisplay').textContent = 'Administrator';
+                        document.getElementById('btn-page-database').style.display = 'flex';
+                        document.getElementById('admin-section-label').style.display = 'block';
+                        runSQL();
+                    } else {
+                        document.getElementById('userRoleDisplay').textContent = 'User Account';
+                        document.getElementById('btn-page-database').style.display = 'none';
+                        document.getElementById('admin-section-label').style.display = 'none';
+                    }
+                    
+                    setTimeout(() => { 
+                        mainMap.invalidateSize(); 
+                        satMap2.invalidateSize(); 
+                    }, 300);
                 } else {
-                    document.getElementById('userRoleDisplay').textContent = 'User Account';
-                    document.getElementById('btn-page-database').style.display = 'none';
-                    document.getElementById('admin-section-label').style.display = 'none';
+                    alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
                 }
-                
-                setTimeout(() => { 
-                    mainMap.invalidateSize(); 
-                    satMap2.invalidateSize(); 
-                }, 300);
-            } else {
-                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+            } catch (err) {
+                alert('เข้าสู่ระบบล้มเหลว: ' + err.message);
             }
         }
 
         function logout() {
+            localStorage.removeItem('solarai_current_user');
             document.getElementById('loginOverlay').style.display = 'flex';
             setAuthMode('login');
         }
@@ -531,17 +510,17 @@
                 drawChart(mLabels, mData);
 
                 // Log to DB
-                const currentEstimates = db.getEstimates();
-                currentEstimates.unshift({
-                    id: currentEstimates.length + 101,
+                const { error: logError } = await _supabase.from('estimates_log').insert([{
                     username: currentUser.username,
                     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-                    system_kw: kw, cost_thb: installPrice,
+                    system_kw: kw,
+                    cost_thb: installPrice,
                     annual_saving: Math.round(saving),
                     payback_years: parseFloat(payback.toFixed(2)),
-                    lat: parseFloat(lat.toFixed(4)), lon: parseFloat(lon.toFixed(4))
-                });
-                db.saveEstimates(currentEstimates);
+                    lat: parseFloat(lat.toFixed(4)),
+                    lon: parseFloat(lon.toFixed(4))
+                }]);
+                if (logError) console.error('Error logging to Supabase:', logError);
                 if (currentRole === 'admin') runSQL();
 
             } catch (err) {
@@ -1015,13 +994,26 @@
         }
 
         // ============================= SQL =============================
-        function runSQL() {
+        async function runSQL() {
             const sql = document.getElementById('sqlQueryInput').value.trim().toLowerCase().replace(/;$/, '');
             const out = document.getElementById('sqlResult');
-            if (sql.includes('select * from users')) renderTable(mockDB.users);
-            else if (sql.includes('select * from estimates_log')) renderTable(mockDB.estimates_log);
-            else if (sql.includes('select * from comparison_data')) renderTable(mockDB.comparison_data);
-            else out.innerHTML = '<span class="sql-error">คำสั่งไม่รู้จัก ลอง: SELECT * FROM estimates_log;</span>';
+            try {
+                if (sql.includes('select * from users')) {
+                    const { data, error } = await _supabase.from('users').select('*').order('id', { ascending: true });
+                    if (error) throw error;
+                    renderTable(data);
+                } else if (sql.includes('select * from estimates_log')) {
+                    const { data, error } = await _supabase.from('estimates_log').select('*').order('id', { ascending: false });
+                    if (error) throw error;
+                    renderTable(data);
+                } else if (sql.includes('select * from comparison_data')) {
+                    renderTable(defaultComparison);
+                } else {
+                    out.innerHTML = '<span class="sql-error">คำสั่งไม่รู้จัก ลอง: SELECT * FROM estimates_log;</span>';
+                }
+            } catch (err) {
+                out.innerHTML = `<span class="sql-error">เกิดข้อผิดพลาดในการดึงข้อมูล: ${err.message}</span>`;
+            }
         }
         function renderTable(arr) {
             const out = document.getElementById('sqlResult');
@@ -1030,7 +1022,7 @@
             let html = `<p style="color:var(--green);margin-bottom:6px;font-size:0.78rem;">Query OK — ${arr.length} rows returned.</p><table class="sql-table"><thead><tr>`;
             h.forEach(k => html += `<th>${k}</th>`);
             html += '</tr></thead><tbody>';
-            arr.forEach(r => { html += '<tr>'; h.forEach(k => html += `<td>${r[k] ?? 'NULL'}</td>`); html += '</tr>'; });
+            arr.forEach(r => { html += '<tr>'; h.forEach(k => { const val = (k === 'password' && r[k]) ? '••••••••' : (r[k] ?? 'NULL'); html += `<td>${val}</td>`; }); html += '</tr>'; });
             html += '</tbody></table>';
             out.innerHTML = html;
         }
@@ -1040,47 +1032,73 @@
             runSQL();
         }
 
-        function renderLiveUsersTable() {
-            const container = document.getElementById('liveUsersTableContainer');
-            if (!container) return;
-            
-            const users = db.getUsers();
-            if (!users || !users.length) {
-                container.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:12px;">ไม่มีผู้ใช้งานในระบบ</p>';
-                return;
-            }
-            
-            let html = `
-                <table class="sql-table" style="width:100%;margin-top:10px;">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ชื่อผู้ใช้งาน (Username)</th>
-                            <th>รหัสผ่าน (Password)</th>
-                            <th>บทบาท (Role)</th>
-                            <th>สถานะ (Status)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            users.forEach(u => {
-                const roleBadgeColor = u.role === 'admin' 
-                    ? 'linear-gradient(135deg, var(--accent), var(--accent2))' 
-                    : 'linear-gradient(135deg, var(--primary), var(--primary2))';
-                html += `
-                    <tr>
-                        <td>${u.id}</td>
-                        <td style="font-weight:700;color:var(--primary);">${u.username}</td>
-                        <td style="font-family:monospace;color:var(--accent);">${u.password}</td>
-                        <td><span class="nav-badge" style="background:${roleBadgeColor};font-size:0.7rem;padding:2px 8px;border-radius:10px;color:white;font-weight:700;margin-left:0;">${u.role.toUpperCase()}</span></td>
-                        <td><span style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5rem;margin-right:4px;"></i> ${u.status}</span></td>
-                    </tr>
+        async function renderLiveUsersTable() {
+            try {
+                const { data: users, error: userError } = await _supabase.from('users').select('*').order('id', { ascending: true });
+                const { data: estimates, error: estError } = await _supabase.from('estimates_log').select('*');
+
+                if (userError) throw userError;
+                if (estError) throw estError;
+
+                const allUsers = users || [];
+                const allEstimates = estimates || [];
+                let totalKw = 0;
+                allEstimates.forEach(e => {
+                    totalKw += parseFloat(e.system_kw || 0);
+                });
+                const totalUsersEl = document.getElementById('adminStatTotalUsers');
+                const totalEstimatesEl = document.getElementById('adminStatTotalEstimates');
+                const totalKwEl = document.getElementById('adminStatTotalKw');
+                if (totalUsersEl) totalUsersEl.textContent = allUsers.length.toLocaleString();
+                if (totalEstimatesEl) totalEstimatesEl.textContent = allEstimates.length.toLocaleString();
+                if (totalKwEl) totalKwEl.textContent = totalKw.toFixed(1) + ' kW';
+
+                const container = document.getElementById('liveUsersTableContainer');
+                if (!container) return;
+                
+                if (!allUsers.length) {
+                    container.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:12px;">ไม่มีผู้ใช้งานในระบบ</p>';
+                    return;
+                }
+                
+                let html = `
+                    <table class="sql-table" style="width:100%;margin-top:10px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ชื่อผู้ใช้งาน (Username)</th>
+                                <th>รหัสผ่าน (Password)</th>
+                                <th>บทบาท (Role)</th>
+                                <th>สถานะ (Status)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-            });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
+                
+                allUsers.forEach(u => {
+                    const roleBadgeColor = u.role === 'admin' 
+                        ? 'linear-gradient(135deg, var(--accent), var(--accent2))' 
+                        : 'linear-gradient(135deg, var(--primary), var(--primary2))';
+                    html += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td style="font-weight:700;color:var(--primary);">${u.username}</td>
+                            <td style="font-family:monospace;color:var(--accent);">••••••••</td>
+                            <td><span class="nav-badge" style="background:${roleBadgeColor};font-size:0.7rem;padding:2px 8px;border-radius:10px;color:white;font-weight:700;margin-left:0;">${u.role.toUpperCase()}</span></td>
+                            <td><span style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5rem;margin-right:4px;"></i> ${u.status}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                console.error('Error rendering live users table:', err);
+                const container = document.getElementById('liveUsersTableContainer');
+                if (container) {
+                    container.innerHTML = `<p style="color:var(--pink);font-size:0.85rem;padding:12px;">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${err.message}</p>`;
+                }
+            }
         }
 
         // ============================= PDF =============================
@@ -1105,9 +1123,40 @@
             html2pdf().from(el).set({ margin: 12, filename: `SolarAI_Report_${lat.toFixed(4)}_${lon.toFixed(4)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).save().then(() => { el.style.display = 'none'; });
         }
 
+        function checkSavedSession() {
+            const savedUser = localStorage.getItem('solarai_current_user');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    currentRole = currentUser.role;
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    const avatarChar = currentUser.username.substring(0, 1).toUpperCase();
+                    document.getElementById('userAvatar').textContent = avatarChar;
+                    document.getElementById('userNameDisplay').textContent = currentUser.username;
+                    if (currentUser.role === 'admin') {
+                        document.getElementById('userRoleDisplay').textContent = 'Administrator';
+                        document.getElementById('btn-page-database').style.display = 'flex';
+                        document.getElementById('admin-section-label').style.display = 'block';
+                        runSQL();
+                    } else {
+                        document.getElementById('userRoleDisplay').textContent = 'User Account';
+                        document.getElementById('btn-page-database').style.display = 'none';
+                        document.getElementById('admin-section-label').style.display = 'none';
+                    }
+                    setTimeout(() => { 
+                        mainMap.invalidateSize(); 
+                        satMap2.invalidateSize(); 
+                    }, 300);
+                } catch (e) {
+                    console.error('Session restoration failed:', e);
+                }
+            }
+        }
+
         // ============================= INIT =============================
         updateSlider();
         updateSelfVal();
         recommendBat();
         renderChat();
         updateSliderFill('timeSlider', 6, 18);
+        checkSavedSession();

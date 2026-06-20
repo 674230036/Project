@@ -17,6 +17,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -637,7 +639,29 @@
 
             <!-- ========================= PAGE: DATABASE ========================= -->
             <div class="tab-page" id="page-database">
-                <div class="card fade-up fade-up-1">
+                <!-- Admin Stats Overview -->
+                <div class="kpi-grid fade-up fade-up-1" style="margin-bottom: 20px;">
+                    <div class="kpi-card" style="--kpi-color:var(--primary)">
+                        <div class="kpi-label">👥 สมาชิกทั้งหมด</div>
+                        <div class="kpi-value" id="adminStatTotalUsers">0</div>
+                        <div class="kpi-unit">บัญชีผู้ใช้งาน</div>
+                        <i class="fa-solid fa-users kpi-icon"></i>
+                    </div>
+                    <div class="kpi-card" style="--kpi-color:var(--accent)">
+                        <div class="kpi-label">📊 จำนวนครั้งที่คำนวณ</div>
+                        <div class="kpi-value" id="adminStatTotalEstimates">0</div>
+                        <div class="kpi-unit">ครั้งการวิเคราะห์ ROI</div>
+                        <i class="fa-solid fa-calculator kpi-icon"></i>
+                    </div>
+                    <div class="kpi-card" style="--kpi-color:var(--green)">
+                        <div class="kpi-label">⚡ กำลังผลิตรวมที่แนะนำ</div>
+                        <div class="kpi-value" id="adminStatTotalKw">0.0</div>
+                        <div class="kpi-unit">kW (กำลังผลิตสะสม)</div>
+                        <i class="fa-solid fa-bolt kpi-icon"></i>
+                    </div>
+                </div>
+
+                <div class="card fade-up fade-up-2">
                     <div class="card-title">
                         <div class="card-icon" style="background:rgba(0,212,255,0.1);color:var(--primary);"><i
                                 class="fa-solid fa-database"></i></div> MySQL Database Live Console (Thesis Backend
