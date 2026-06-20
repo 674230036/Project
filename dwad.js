@@ -53,72 +53,194 @@
             anim();
         })();
 
-        // ============================= MOCK DB =============================
-        const mockDB = {
-            users: [
-                { id: 1, username: 'admin', role: 'Admin', status: 'Active' },
-                { id: 2, username: 'user', role: 'User', status: 'Active' }
-            ],
-            estimates_log: [
-                { id: 101, username: 'admin', timestamp: '2026-06-19 14:15', system_kw: 5.0, cost_thb: 150000, annual_saving: 29800, payback_years: 5.03, lat: 14.4740, lon: 100.1170 },
-                { id: 102, username: 'user', timestamp: '2026-06-19 11:30', system_kw: 10.0, cost_thb: 280000, annual_saving: 61200, payback_years: 4.58, lat: 13.7563, lon: 100.5018 }
-            ],
-            comparison_data: [
-                { location: 'บ้านโป่ง', annual_kwh: 7520, desc: 'Top 8%' },
-                { location: 'นครปฐม', annual_kwh: 7350, desc: 'Top 18%' },
-                { location: 'สุพรรณบุรี', annual_kwh: 7690, desc: 'Top 4%' }
-            ]
+        // ============================= DYNAMIC DB (LocalStorage) =============================
+        const defaultUsers = [
+            { id: 1, username: 'admin', password: 'admin123', role: 'admin', status: 'Active' },
+            { id: 2, username: 'user', password: 'user123', role: 'user', status: 'Active' }
+        ];
+        
+        const defaultEstimates = [
+            { id: 101, username: 'admin', timestamp: '2026-06-19 14:15', system_kw: 5.0, cost_thb: 150000, annual_saving: 29800, payback_years: 5.03, lat: 14.4740, lon: 100.1170 },
+            { id: 102, username: 'user', timestamp: '2026-06-19 11:30', system_kw: 10.0, cost_thb: 280000, annual_saving: 61200, payback_years: 4.58, lat: 13.7563, lon: 100.5018 }
+        ];
+
+        const defaultComparison = [
+            { location: 'บ้านโป่ง', annual_kwh: 7520, desc: 'Top 8%' },
+            { location: 'นครปฐม', annual_kwh: 7350, desc: 'Top 18%' },
+            { location: 'สุพรรณบุรี', annual_kwh: 7690, desc: 'Top 4%' }
+        ];
+
+        // Initialize localStorage if not present
+        if (!localStorage.getItem('solarai_users')) {
+            localStorage.setItem('solarai_users', JSON.stringify(defaultUsers));
+        } else {
+            // Ensure admin account always exists in case database was modified or cleared of admin
+            const users = JSON.parse(localStorage.getItem('solarai_users'));
+            const adminExists = users.some(u => u.username.toLowerCase() === 'admin');
+            if (!adminExists) {
+                users.unshift({ id: 1, username: 'admin', password: 'admin123', role: 'admin', status: 'Active' });
+                localStorage.setItem('solarai_users', JSON.stringify(users));
+            }
+        }
+        if (!localStorage.getItem('solarai_estimates')) {
+            localStorage.setItem('solarai_estimates', JSON.stringify(defaultEstimates));
+        }
+        if (!localStorage.getItem('solarai_comparison')) {
+            localStorage.setItem('solarai_comparison', JSON.stringify(defaultComparison));
+        }
+
+        const db = {
+            getUsers: () => JSON.parse(localStorage.getItem('solarai_users')),
+            saveUsers: (users) => localStorage.setItem('solarai_users', JSON.stringify(users)),
+            getEstimates: () => JSON.parse(localStorage.getItem('solarai_estimates')),
+            saveEstimates: (estimates) => localStorage.setItem('solarai_estimates', JSON.stringify(estimates)),
+            getComparison: () => JSON.parse(localStorage.getItem('solarai_comparison'))
         };
-        let currentRole = 'user', currentUser = mockDB.users[1];
+
+        const mockDB = {
+            get users() { return db.getUsers(); },
+            get estimates_log() { return db.getEstimates(); },
+            get comparison_data() { return db.getComparison(); }
+        };
+
+        let authMode = 'login';
+        let currentRole = 'user';
+        let currentUser = db.getUsers()[1]; // Fallback to default user
         let lat = 14.474, lon = 100.117;
         let panelCleanliness = 0.915;
 
-        // ============================= LOGIN =============================
-        function setLoginRole(role) {
-            currentRole = role;
-            if (role === 'admin') {
-                document.getElementById('btnTabAdmin').classList.add('active');
-                document.getElementById('btnTabUser').classList.remove('active');
-                document.getElementById('usernameInput').value = 'admin';
-                document.getElementById('passwordInput').value = 'admin123';
-                document.getElementById('loginHint').textContent = 'Admin: admin / admin123';
+        // ============================= AUTHENTICATION =============================
+        function setAuthMode(mode) {
+            authMode = mode;
+            const btnLogin = document.getElementById('modeTabLogin');
+            const btnRegister = document.getElementById('modeTabRegister');
+            const confirmGroup = document.getElementById('confirmPasswordGroup');
+            const btnSubmit = document.getElementById('authSubmitBtn');
+            const loginHint = document.getElementById('loginHint');
+            
+            // Clear inputs on switcher click to prevent lingering data
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordInput').value = '';
+            
+            if (mode === 'register') {
+                btnLogin.classList.remove('active');
+                btnRegister.classList.add('active');
+                confirmGroup.style.display = 'block';
+                btnSubmit.innerHTML = '<i class="fa-solid fa-user-plus"></i> สมัครสมาชิก';
+                loginHint.innerHTML = 'กรอกข้อมูลเพื่อสมัครบัญชีใหม่ จากนั้นเข้าใช้งานได้ทันที';
+                loginHint.style.display = 'block';
+                
+                document.getElementById('confirmPasswordInput').value = '';
             } else {
-                document.getElementById('btnTabUser').classList.add('active');
-                document.getElementById('btnTabAdmin').classList.remove('active');
-                document.getElementById('usernameInput').value = 'user';
-                document.getElementById('passwordInput').value = 'user123';
-                document.getElementById('loginHint').textContent = 'บัญชีผู้ใช้: user / user123 | Admin: admin / admin123';
+                btnLogin.classList.add('active');
+                btnRegister.classList.remove('active');
+                confirmGroup.style.display = 'none';
+                btnSubmit.innerHTML = '<i class="fa-solid fa-bolt"></i> เข้าสู่ระบบ';
+                loginHint.style.display = 'none';
             }
         }
-        function login() {
-            const u = document.getElementById('usernameInput').value;
+
+        function handleAuthSubmit() {
+            if (authMode === 'register') {
+                register();
+            } else {
+                login();
+            }
+        }
+
+        function register() {
+            const u = document.getElementById('usernameInput').value.trim();
             const p = document.getElementById('passwordInput').value;
-            if (currentRole === 'admin' && u === 'admin' && p === 'admin123') {
-                currentUser = mockDB.users[0];
+            const cp = document.getElementById('confirmPasswordInput').value;
+            
+            if (!u || !p || !cp) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            if (p !== cp) {
+                alert('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+                return;
+            }
+            if (u.length < 3) {
+                alert('ชื่อผู้ใช้งานต้องมีความยาวอย่างน้อย 3 ตัวอักษร');
+                return;
+            }
+            if (p.length < 4) {
+                alert('รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+                return;
+            }
+
+            const users = db.getUsers();
+            const exists = users.some(user => user.username.toLowerCase() === u.toLowerCase());
+            if (exists) {
+                alert('ชื่อผู้ใช้งานนี้ถูกใช้งานแล้ว กรุณาใช้ชื่ออื่น');
+                return;
+            }
+
+            const newUser = {
+                id: Date.now(),
+                username: u,
+                password: p,
+                role: 'user', // Registered user is always 'user'
+                status: 'Active'
+            };
+
+            users.push(newUser);
+            db.saveUsers(users);
+
+            alert('สมัครสมาชิกสำเร็จแล้ว! ระบบจะสลับไปที่หน้าเข้าสู่ระบบ');
+            
+            setAuthMode('login');
+            document.getElementById('usernameInput').value = u;
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+
+        function login() {
+            const u = document.getElementById('usernameInput').value.trim();
+            const p = document.getElementById('passwordInput').value;
+            
+            if (!u || !p) {
+                alert('กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน');
+                return;
+            }
+
+            const users = db.getUsers();
+            const foundUser = users.find(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
+
+            if (foundUser) {
+                currentUser = foundUser;
+                currentRole = foundUser.role;
+                
                 document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('userAvatar').textContent = 'A';
-                document.getElementById('userNameDisplay').textContent = 'admin';
-                document.getElementById('userRoleDisplay').textContent = 'Administrator';
-                document.getElementById('btn-page-database').style.display = 'flex';
-                document.getElementById('admin-section-label').style.display = 'block';
-                runSQL();
-                setTimeout(() => { mainMap.invalidateSize(); satMap2.invalidateSize(); }, 300);
-            } else if (currentRole === 'user' && u === 'user' && p === 'user123') {
-                currentUser = mockDB.users[1];
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('userAvatar').textContent = 'U';
-                document.getElementById('userNameDisplay').textContent = 'user';
-                document.getElementById('userRoleDisplay').textContent = 'User Account';
-                document.getElementById('btn-page-database').style.display = 'none';
-                document.getElementById('admin-section-label').style.display = 'none';
-                setTimeout(() => { mainMap.invalidateSize(); satMap2.invalidateSize(); }, 300);
+                
+                const avatarChar = foundUser.username.substring(0, 1).toUpperCase();
+                document.getElementById('userAvatar').textContent = avatarChar;
+                document.getElementById('userNameDisplay').textContent = foundUser.username;
+                
+                if (foundUser.role === 'admin') {
+                    document.getElementById('userRoleDisplay').textContent = 'Administrator';
+                    document.getElementById('btn-page-database').style.display = 'flex';
+                    document.getElementById('admin-section-label').style.display = 'block';
+                    runSQL();
+                } else {
+                    document.getElementById('userRoleDisplay').textContent = 'User Account';
+                    document.getElementById('btn-page-database').style.display = 'none';
+                    document.getElementById('admin-section-label').style.display = 'none';
+                }
+                
+                setTimeout(() => { 
+                    mainMap.invalidateSize(); 
+                    satMap2.invalidateSize(); 
+                }, 300);
             } else {
                 alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
             }
         }
+
         function logout() {
             document.getElementById('loginOverlay').style.display = 'flex';
-            setLoginRole('user');
+            setAuthMode('login');
         }
 
         // ============================= MAPS =============================
@@ -259,6 +381,7 @@
             if (id === 'page-twin') { init3D(); setTimeout(updateSunSim, 100); }
             if (id === 'page-dashboard') { setTimeout(() => mainMap.invalidateSize(), 200); }
             if (id === 'page-satellite') { setTimeout(() => satMap2.invalidateSize(), 200); }
+            if (id === 'page-database') { renderLiveUsersTable(); }
 
             // Auto-hide sidebar on page switch (mobile/tablet)
             const sidebar = document.getElementById('sidebar');
@@ -408,8 +531,9 @@
                 drawChart(mLabels, mData);
 
                 // Log to DB
-                mockDB.estimates_log.unshift({
-                    id: mockDB.estimates_log.length + 101,
+                const currentEstimates = db.getEstimates();
+                currentEstimates.unshift({
+                    id: currentEstimates.length + 101,
                     username: currentUser.username,
                     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
                     system_kw: kw, cost_thb: installPrice,
@@ -417,6 +541,7 @@
                     payback_years: parseFloat(payback.toFixed(2)),
                     lat: parseFloat(lat.toFixed(4)), lon: parseFloat(lon.toFixed(4))
                 });
+                db.saveEstimates(currentEstimates);
                 if (currentRole === 'admin') runSQL();
 
             } catch (err) {
@@ -908,6 +1033,54 @@
             arr.forEach(r => { html += '<tr>'; h.forEach(k => html += `<td>${r[k] ?? 'NULL'}</td>`); html += '</tr>'; });
             html += '</tbody></table>';
             out.innerHTML = html;
+        }
+
+        function runQuickSQL(sqlText) {
+            document.getElementById('sqlQueryInput').value = sqlText;
+            runSQL();
+        }
+
+        function renderLiveUsersTable() {
+            const container = document.getElementById('liveUsersTableContainer');
+            if (!container) return;
+            
+            const users = db.getUsers();
+            if (!users || !users.length) {
+                container.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:12px;">ไม่มีผู้ใช้งานในระบบ</p>';
+                return;
+            }
+            
+            let html = `
+                <table class="sql-table" style="width:100%;margin-top:10px;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ชื่อผู้ใช้งาน (Username)</th>
+                            <th>รหัสผ่าน (Password)</th>
+                            <th>บทบาท (Role)</th>
+                            <th>สถานะ (Status)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            users.forEach(u => {
+                const roleBadgeColor = u.role === 'admin' 
+                    ? 'linear-gradient(135deg, var(--accent), var(--accent2))' 
+                    : 'linear-gradient(135deg, var(--primary), var(--primary2))';
+                html += `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td style="font-weight:700;color:var(--primary);">${u.username}</td>
+                        <td style="font-family:monospace;color:var(--accent);">${u.password}</td>
+                        <td><span class="nav-badge" style="background:${roleBadgeColor};font-size:0.7rem;padding:2px 8px;border-radius:10px;color:white;font-weight:700;margin-left:0;">${u.role.toUpperCase()}</span></td>
+                        <td><span style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5rem;margin-right:4px;"></i> ${u.status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         // ============================= PDF =============================

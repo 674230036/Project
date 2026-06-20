@@ -180,6 +180,37 @@
             margin-top: 4px;
         }
 
+        .auth-mode-container {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-mode-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--muted);
+            padding: 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.25s;
+        }
+
+        .auth-mode-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.05));
+            color: var(--primary);
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.1);
+        }
+
         .login-tabs {
             display: flex;
             background: rgba(255, 255, 255, 0.04);
