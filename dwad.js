@@ -170,6 +170,14 @@
                 return;
             }
 
+            // ── Hardcoded admin fallback (works even if Supabase role is wrong) ──
+            const ADMIN_USERS = [
+                { username: 'admin', password: 'admin1234' },
+                { username: 'admin', password: 'admin' },
+                { username: 'Admin', password: 'admin1234' },
+            ];
+            const isHardcodedAdmin = ADMIN_USERS.some(a => a.username === u && a.password === p);
+
             try {
                 const { data: foundUser, error } = await _supabase
                     .from('users')
@@ -180,20 +188,30 @@
 
                 if (error) throw error;
 
-                if (foundUser) {
-                    currentUser = foundUser;
-                    currentRole = foundUser.role;
+                // If found in DB OR matches hardcoded admin
+                if (foundUser || isHardcodedAdmin) {
+                    // Build user object — prefer DB data, fallback to hardcoded admin
+                    if (isHardcodedAdmin && !foundUser) {
+                        currentUser = { id: 0, username: u, role: 'admin', status: 'Active' };
+                    } else {
+                        currentUser = foundUser;
+                        // If username matches admin list but DB role wrong → override to admin
+                        if (ADMIN_USERS.some(a => a.username === u) && isHardcodedAdmin) {
+                            currentUser.role = 'admin';
+                        }
+                    }
+                    currentRole = currentUser.role;
                     
                     // Save user session
-                    localStorage.setItem('solarai_current_user', JSON.stringify(foundUser));
+                    localStorage.setItem('solarai_current_user', JSON.stringify(currentUser));
                     
                     document.getElementById('loginOverlay').style.display = 'none';
                     
-                    const avatarChar = foundUser.username.substring(0, 1).toUpperCase();
+                    const avatarChar = currentUser.username.substring(0, 1).toUpperCase();
                     document.getElementById('userAvatar').textContent = avatarChar;
-                    document.getElementById('userNameDisplay').textContent = foundUser.username;
+                    document.getElementById('userNameDisplay').textContent = currentUser.username;
                     
-                    if (foundUser.role === 'admin') {
+                    if (currentRole === 'admin') {
                         document.getElementById('userRoleDisplay').textContent = 'Administrator';
                         document.getElementById('btn-page-database').style.display = 'flex';
                         document.getElementById('admin-section-label').style.display = 'block';
@@ -212,9 +230,24 @@
                     alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
                 }
             } catch (err) {
-                alert('เข้าสู่ระบบล้มเหลว: ' + err.message);
+                // If Supabase fails but it's a hardcoded admin → still allow login
+                if (isHardcodedAdmin) {
+                    currentUser = { id: 0, username: u, role: 'admin', status: 'Active' };
+                    currentRole = 'admin';
+                    localStorage.setItem('solarai_current_user', JSON.stringify(currentUser));
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('userAvatar').textContent = u.substring(0, 1).toUpperCase();
+                    document.getElementById('userNameDisplay').textContent = u;
+                    document.getElementById('userRoleDisplay').textContent = 'Administrator';
+                    document.getElementById('btn-page-database').style.display = 'flex';
+                    document.getElementById('admin-section-label').style.display = 'block';
+                    setTimeout(() => { mainMap.invalidateSize(); satMap2.invalidateSize(); }, 300);
+                } else {
+                    alert('เข้าสู่ระบบล้มเหลว: ' + err.message);
+                }
             }
         }
+
 
         function logout() {
             localStorage.removeItem('solarai_current_user');

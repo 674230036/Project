@@ -23,6 +23,13 @@
             --radius: 16px;
         }
 
+        html {
+            overflow-x: hidden;
+            max-width: 100%;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -55,6 +62,8 @@
             min-height: 100vh;
             display: flex;
             overflow-x: hidden;
+            max-width: 100vw;
+            width: 100%;
         }
 
         /* ===== PARTICLE CANVAS ===== */
@@ -1954,7 +1963,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* ===== RESPONSIVE ===== */
+        /* ===== RESPONSIVE — Tablet/iPad landscape (≤1024px) ===== */
         @media(max-width:1024px) {
             #sidebarToggle {
                 display: flex;
@@ -2005,7 +2014,140 @@
             }
         }
 
+        /* ===== iPad / Tablet portrait (≤768px) ===== */
+        @media(max-width: 768px) {
+            .page-content {
+                padding: 16px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            /* Topbar */
+            .topbar {
+                height: 60px;
+                padding: 0 14px;
+            }
+
+            .topbar-title h2 {
+                font-size: 0.9rem;
+            }
+
+            /* Chat */
+            .chat-history {
+                height: 320px;
+            }
+
+            /* Forecast row wrap */
+            .forecast-row {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 12px 14px;
+            }
+
+            .forecast-name {
+                min-width: auto;
+                width: 100%;
+            }
+
+            /* Draw buttons */
+            .draw-btns {
+                flex-wrap: wrap;
+            }
+
+            .draw-btns .btn-calc,
+            .draw-btns .btn-sm {
+                flex: 1 1 calc(50% - 4px);
+                min-width: 120px;
+                justify-content: center;
+            }
+
+            /* Grids */
+            .roi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .maintenance-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Alt grid single col */
+            .alt-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .alt-left {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding-right: 0;
+                padding-bottom: 16px;
+            }
+
+            /* SQL console */
+            .console-top {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .sql-input-row {
+                flex-direction: column;
+            }
+
+            .sql-input-row input {
+                width: 100%;
+            }
+
+            .btn-run {
+                width: 100%;
+                text-align: center;
+            }
+
+            /* Battery */
+            .bat-row {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .bat-val {
+                width: 100%;
+                font-size: 0.9rem;
+            }
+
+            /* Maps */
+            #map {
+                height: 280px;
+            }
+
+            #satMap {
+                height: 350px;
+            }
+
+            #threejs-container {
+                height: 280px;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ===== Mobile (≤575px) ===== */
         @media(max-width: 575px) {
+            /* Scale down base font so all rem units shrink */
+            :root {
+                font-size: 14px;
+            }
+
+            /* Prevent horizontal overflow */
+            .main-wrap,
+            .page-content,
+            .card,
+            .tab-page {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
             .kpi-grid,
             .roi-grid,
             .maintenance-grid,
@@ -2015,13 +2157,12 @@
             }
 
 
-
             .page-content {
-                padding: 16px;
+                padding: 12px;
             }
 
             .card {
-                padding: 16px;
+                padding: 14px;
             }
 
             .kpi-card {
@@ -2032,22 +2173,165 @@
                 font-size: 1.35rem;
             }
 
+            /* Topbar mobile */
+            .topbar {
+                height: 56px;
+                padding: 0 10px;
+                gap: 8px;
+            }
+
+            .topbar-title h2 {
+                font-size: 0.82rem;
+            }
+
+            .topbar-actions {
+                gap: 6px;
+            }
+
+            .btn-icon {
+                width: 34px;
+                height: 34px;
+                font-size: 0.85rem;
+            }
+
+            #sidebarToggle {
+                width: 34px;
+                height: 34px;
+                margin-right: 6px;
+            }
+
+            /* Maps */
             #map {
-                height: 250px;
+                height: 240px;
             }
 
             #satMap {
-                height: 300px;
+                height: 280px;
             }
 
             #threejs-container {
-                height: 250px;
+                height: 240px;
             }
 
+            /* Chat */
             .chat-history {
-                height: 300px;
+                height: 260px;
             }
 
+            /* Suggested chips — 2 per row */
+            .chat-suggested {
+                flex-wrap: wrap;
+                overflow-x: unset;
+                padding: 10px;
+                gap: 6px;
+            }
+
+            .suggest-chip {
+                flex: 1 1 calc(50% - 6px);
+                min-width: 110px;
+                text-align: center;
+                font-size: 0.72rem;
+                padding: 6px 8px;
+            }
+
+            /* Chat input */
+            .chat-input-row input {
+                font-size: 0.82rem;
+                padding: 12px;
+            }
+
+            /* Draw buttons — 2 per row grid */
+            .draw-btns {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .draw-btns .btn-calc,
+            .draw-btns .btn-sm {
+                flex: unset;
+                width: 100%;
+                justify-content: center;
+                font-size: 0.75rem;
+                padding: 8px 6px;
+            }
+
+            /* Map buttons */
+            .map-btns {
+                gap: 6px;
+            }
+
+            .map-btns .btn-sm {
+                flex: 1;
+                justify-content: center;
+                font-size: 0.72rem;
+                padding: 7px 6px;
+            }
+
+            /* Forecast row stack */
+            .forecast-row {
+                flex-direction: column;
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .forecast-name {
+                width: 100%;
+            }
+
+            .forecast-weather,
+            .forecast-kwh {
+                font-size: 0.82rem;
+            }
+
+            /* SQL */
+            .sql-console {
+                padding: 12px;
+            }
+
+            .console-top {
+                flex-direction: column;
+                gap: 4px;
+                font-size: 0.7rem;
+            }
+
+            .sql-input-row {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn-run {
+                width: 100%;
+            }
+
+            /* Battery */
+            .bat-row {
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .bat-val {
+                width: 100%;
+            }
+
+            /* Coord row */
+            .coord-row {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .btn-pdf {
+                margin-left: 0;
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* ROI stat smaller */
+            .roi-val {
+                font-size: 0.92rem;
+            }
+
+            /* Tables scroll */
             .compare-table,
             .sql-table {
                 display: block;
@@ -2055,16 +2339,84 @@
                 width: 100%;
                 -webkit-overflow-scrolling: touch;
             }
-        }
 
-        @media(max-width: 480px) {
+            /* State box */
+            .state-box {
+                padding: 36px 16px;
+            }
+
+            /* Card title */
+            .card-title {
+                font-size: 0.88rem;
+            }
+
+            /* Login */
             .login-box {
-                padding: 32px 20px;
-                margin: 16px;
+                padding: 28px 16px;
+                margin: 12px;
             }
 
             .login-logo h1 {
-                font-size: 1.5rem;
+                font-size: 1.45rem;
+            }
+
+            /* Three.js HUD */
+            .three-hud {
+                font-size: 0.65rem;
+                padding: 8px 10px;
+            }
+        }
+
+        /* ===== Small phones (≤390px) ===== */
+        @media(max-width: 390px) {
+            :root {
+                font-size: 13px;
+            }
+
+            .kpi-value {
+                font-size: 1.2rem;
+            }
+
+            .card-title {
+                font-size: 0.82rem;
+                gap: 8px;
+            }
+
+            .suggest-chip {
+                flex: 1 1 100%;
+            }
+
+            .draw-btns {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-history {
+                height: 220px;
+            }
+
+            #map {
+                height: 210px;
+            }
+
+            #satMap {
+                height: 240px;
+            }
+
+            #threejs-container {
+                height: 200px;
+            }
+
+            .login-box {
+                padding: 24px 14px;
+                margin: 8px;
+            }
+
+            .login-logo h1 {
+                font-size: 1.3rem;
+            }
+
+            .topbar-title h2 {
+                font-size: 0.75rem;
             }
         }
 
